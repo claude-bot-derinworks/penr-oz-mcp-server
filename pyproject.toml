@@ -11,11 +11,11 @@ authors = [
 dependencies = [
   "fastmcp",
   "httpx",
+  "pydantic>=2.0",
 ]
 
 [project.optional-dependencies]
 optional = [
-  "pydantic",
   "python-dotenv",
 ]
 dev = [
