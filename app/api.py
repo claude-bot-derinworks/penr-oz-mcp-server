@@ -3,6 +3,9 @@
 import asyncio
 import httpx
 from typing import Any
+from pydantic import ValidationError
+from app.models import FetchJsonInput
+from app.errors import format_validation_error
 
 
 class APIError(Exception):
@@ -56,6 +59,15 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
+    # Validate inputs with Pydantic
+    try:
+        validated = FetchJsonInput(url=url, timeout=timeout)
+    except ValidationError as e:
+        raise InvalidURLError(format_validation_error(e)) from e
+
+    url = validated.url
+    timeout = validated.timeout
+
     # Validate URL scheme
     if not url.startswith(("http://", "https://")):
         raise InvalidURLError(

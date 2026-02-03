@@ -136,6 +136,56 @@ The server provides secure, read-only access to files within a configured sandbo
 - Paths are validated and resolved before access
 - Only UTF-8 text files can be read
 
+### Structured Validation (Pydantic)
+
+All tools and resources use Pydantic models for input validation. Invalid inputs return structured error messages before any business logic runs.
+
+#### Input Schemas
+
+**`ListFilesInput`**
+```json
+{"path": "docs"}
+```
+- `path` (string, default: `""`) — Relative path within sandbox
+
+**`ReadTextFileInput`**
+```json
+{"path": "welcome.txt"}
+```
+- `path` (string, required, min length: 1) — Relative path to file within sandbox
+
+**`FetchJsonInput`**
+```json
+{"url": "https://api.github.com/repos/python/cpython", "timeout": 10.0}
+```
+- `url` (string, required, min length: 1) — HTTP(S) URL to fetch
+- `timeout` (float, default: `10.0`, range: `(0, 300]`) — Request timeout in seconds
+
+**`OzfsResourceInput`**
+```json
+{"path": "docs/guide.md"}
+```
+- `path` (string, required, min length: 1) — File path within sandbox
+
+#### Output Schemas
+
+**`FileEntry`**
+```json
+{"name": "welcome.txt", "type": "file", "path": "welcome.txt", "size": 128}
+```
+- `name` (string) — File or directory name
+- `type` (string) — `"file"` or `"directory"`
+- `path` (string) — Relative path within sandbox
+- `size` (int or null) — File size in bytes (null for directories)
+
+#### Error Format
+
+Invalid inputs return structured errors:
+```
+Validation error: 1 issue(s) found
+  - path: String should have at least 1 character
+```
+
 ## Project layout
 
 ```text
@@ -147,7 +197,9 @@ penr-oz-mcp-server/
 |   |-- __init__.py
 |   |-- api.py             # API integration tools (fetch_json)
 |   |-- config.py          # Server configuration and sandbox settings
+|   |-- errors.py          # Centralized validation error handling
 |   |-- filesystem.py      # Filesystem operations with security validation
+|   |-- models.py          # Pydantic models for input/output validation
 |   |-- tools.py           # MCP tools (ping, list_files, read_text_file)
 |   |-- resources.py       # MCP resources (info, ozfs://)
 |   `-- prompts.py         # MCP prompt templates
@@ -160,14 +212,17 @@ penr-oz-mcp-server/
     |-- test_server_smoke.py
     |-- test_filesystem.py # Filesystem security and functionality tests
     |-- test_api.py        # API integration tests
-    `-- test_prompts.py    # Prompt template tests
+    |-- test_prompts.py    # Prompt template tests
+    `-- test_models.py     # Pydantic model and validation tests
 ```
 
 ## Modules
 
 - `app/api.py` - API integration tools for external HTTP services (fetch_json)
 - `app/config.py` - Server metadata, environment flags, and sandbox configuration
+- `app/errors.py` - Centralized validation error formatting and extraction
 - `app/filesystem.py` - Secure filesystem operations with path validation
+- `app/models.py` - Pydantic models for tool/resource input and output validation
 - `app/tools.py` - MCP tools (ping, list_files, read_text_file)
 - `app/resources.py` - MCP resources (info, ozfs://)
 - `app/prompts.py` - MCP prompt templates

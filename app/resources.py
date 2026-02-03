@@ -1,6 +1,9 @@
 """Resource definitions for the MCP server."""
 
+from pydantic import ValidationError
 from app.filesystem import read_file, PathValidationError
+from app.models import OzfsResourceInput
+from app.errors import format_validation_error
 
 
 def info() -> str:
@@ -19,6 +22,7 @@ def ozfs_resource(path: str) -> str:
         File contents as text
 
     Raises:
+        ValueError: If input validation fails
         PathValidationError: If path attempts to escape sandbox
         FileNotFoundError: If file doesn't exist
         IsADirectoryError: If path is a directory
@@ -27,4 +31,9 @@ def ozfs_resource(path: str) -> str:
     if path.startswith('/'):
         path = path[1:]
 
-    return read_file(path)
+    try:
+        validated = OzfsResourceInput(path=path)
+    except ValidationError as e:
+        raise ValueError(format_validation_error(e)) from e
+
+    return read_file(validated.path)
