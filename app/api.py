@@ -75,10 +75,6 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         logger.error("Tool fetch_json validation failed: %s", msg)
         raise InvalidURLError(msg) from e
 
-    url = validated.url
-    timeout = validated.timeout
-    safe_url = url.split("?")[0]
-
     # Validate URL scheme
     if not url.startswith(("http://", "https://")):
         logger.error("Tool fetch_json invalid URL scheme: %r", safe_url)
