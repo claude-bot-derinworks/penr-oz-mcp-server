@@ -278,3 +278,24 @@ class TestFetchJsonLogging:
             "fetch_json" in record.message and record.levelno == logging.DEBUG
             for record in caplog.records
         )
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_json_url_query_params_not_logged(self, respx_mock, caplog):
+        """fetch_json() must not log URL query parameters that may contain secrets."""
+        secret_url = "https://api.example.com/data?api_key=secret123&token=abc"
+        respx_mock.get(secret_url).mock(
+            return_value=httpx.Response(200, json={"result": "ok"})
+        )
+
+        from app.api import fetch_json
+
+        with caplog.at_level(logging.DEBUG, logger="app.api"):
+            await fetch_json(secret_url)
+
+        # Only check our own log records (httpx logs the full URL internally)
+        our_records = [r for r in caplog.records if r.name.startswith("app.")]
+        for record in our_records:
+            assert "secret123" not in record.message
+            assert "api_key=secret123" not in record.message
+            assert "token=abc" not in record.message

@@ -62,7 +62,10 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
-    logger.debug("Tool invoked: fetch_json url=%r timeout=%s", url, timeout)
+    # Strip query parameters from URL before logging to avoid leaking
+    # sensitive values that may appear as query parameters (API keys, tokens).
+    safe_url = url.split("?")[0]
+    logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
     # Validate inputs with Pydantic
     try:
@@ -74,10 +77,11 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
 
     url = validated.url
     timeout = validated.timeout
+    safe_url = url.split("?")[0]
 
     # Validate URL scheme
     if not url.startswith(("http://", "https://")):
-        logger.error("Tool fetch_json invalid URL scheme: %r", url)
+        logger.error("Tool fetch_json invalid URL scheme: %r", safe_url)
         raise InvalidURLError(
             f"Invalid URL scheme. URL must start with http:// or https://. Got: {url}"
         )
@@ -93,15 +97,15 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
                     f"Request timed out after {timeout} seconds for URL: {url}"
                 ) from e
             except httpx.HTTPStatusError as e:
-                logger.error("Tool fetch_json HTTP error %s for url=%r", e.response.status_code, url)
+                logger.error("Tool fetch_json HTTP error %s for url=%r", e.response.status_code, safe_url)
                 raise HTTPError(
                     f"HTTP {e.response.status_code} error for URL: {url}"
                 ) from e
             except httpx.InvalidURL as e:
-                logger.error("Tool fetch_json invalid URL format: %r", url)
+                logger.error("Tool fetch_json invalid URL format: %r", safe_url)
                 raise InvalidURLError(f"Invalid URL format: {url}") from e
             except httpx.RequestError as e:
-                logger.error("Tool fetch_json network error for url=%r: %s", url, e)
+                logger.error("Tool fetch_json network error for url=%r: %s", safe_url, e)
                 raise APIError(
                     f"Network error occurred while fetching {url}: {str(e)}"
                 ) from e
@@ -109,10 +113,10 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
             # Parse JSON response
             try:
                 result = response.json()
-                logger.info("Tool fetch_json succeeded: url=%r", url)
+                logger.info("Tool fetch_json succeeded: url=%r", safe_url)
                 return result
             except Exception as e:
-                logger.error("Tool fetch_json JSON decode error for url=%r", url)
+                logger.error("Tool fetch_json JSON decode error for url=%r", safe_url)
                 raise JSONDecodeError(
                     f"Failed to decode JSON response from {url}. "
                     f"Response may not be valid JSON."
@@ -126,5 +130,5 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        logger.error("Tool fetch_json unexpected error for url=%r: %s", url, e)
+        logger.error("Tool fetch_json unexpected error for url=%r: %s", safe_url, e)
         raise APIError(f"Unexpected error fetching {url}: {str(e)}") from e
