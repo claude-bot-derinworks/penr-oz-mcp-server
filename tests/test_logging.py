@@ -22,6 +22,14 @@ if str(ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 
 class TestSetupLogging:
+    @pytest.fixture(autouse=True)
+    def reload_config_after_test(self):
+        """Reload app.config after each test to restore default state."""
+        yield
+        import importlib
+        import app.config as cfg
+        importlib.reload(cfg)
+
     def test_default_level_is_info(self, caplog):
         """setup_logging() sets root log level to INFO when DEBUG is unset."""
         import importlib
@@ -44,9 +52,6 @@ class TestSetupLogging:
             assert cfg.DEBUG is True
             assert cfg.LOG_LEVEL == logging.DEBUG
 
-        # Restore
-        importlib.reload(cfg)
-
     def test_debug_flag_true_value(self):
         """DEBUG=true is treated as a truthy value."""
         import importlib
@@ -55,8 +60,6 @@ class TestSetupLogging:
         with patch.dict(os.environ, {"DEBUG": "true"}):
             importlib.reload(cfg)
             assert cfg.DEBUG is True
-
-        importlib.reload(cfg)
 
     def test_debug_flag_yes_value(self):
         """DEBUG=yes is treated as a truthy value."""
@@ -67,8 +70,6 @@ class TestSetupLogging:
             importlib.reload(cfg)
             assert cfg.DEBUG is True
 
-        importlib.reload(cfg)
-
     def test_debug_flag_false_when_unset(self):
         """DEBUG is False when the env var is absent."""
         import importlib
@@ -78,8 +79,6 @@ class TestSetupLogging:
         with patch.dict(os.environ, env, clear=True):
             importlib.reload(cfg)
             assert cfg.DEBUG is False
-
-        importlib.reload(cfg)
 
 
 # ---------------------------------------------------------------------------

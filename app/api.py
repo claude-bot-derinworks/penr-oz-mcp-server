@@ -66,7 +66,11 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
     """
     # Strip query parameters from URL before logging to avoid leaking
     # sensitive values that may appear as query parameters (API keys, tokens).
-    safe_url = urlunsplit(urlsplit(url)[:3] + ('', ''))
+    parts = urlsplit(url)
+    safe_netloc = parts.hostname or ''
+    if parts.port:
+        safe_netloc += f':{parts.port}'
+    safe_url = urlunsplit((parts.scheme, safe_netloc, parts.path, '', ''))
     logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
     # Validate inputs with Pydantic
