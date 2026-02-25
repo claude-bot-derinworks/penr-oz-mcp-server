@@ -78,7 +78,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         validated = FetchJsonInput(url=url, timeout=timeout)
     except ValidationError as e:
         msg = format_validation_error(e)
-        logger.error("Tool fetch_json validation failed: %s", msg)
+        logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
         raise InvalidURLError(msg) from e
 
     url = validated.url

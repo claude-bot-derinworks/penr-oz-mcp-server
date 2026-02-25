@@ -32,16 +32,18 @@ def list_files(path: str = "") -> List[Dict[str, str]]:
         FileNotFoundError: If directory doesn't exist
         NotADirectoryError: If path is not a directory
     """
-    logger.debug("Tool invoked: list_files path=%r", path)
     try:
         validated = ListFilesInput(path=path)
+    except ValidationError as e:
+        msg = format_validation_error(e)
+        logger.error("Tool list_files validation failed for path=%r: %s", path, msg)
+        raise ValueError(msg) from e
+
+    logger.debug("Tool invoked: list_files path=%r", validated.path)
+    try:
         result = list_directory(validated.path)
         logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), validated.path)
         return result
-    except ValidationError as e:
-        msg = format_validation_error(e)
-        logger.error("Tool list_files validation failed: %s", msg)
-        raise ValueError(msg) from e
     except (PathValidationError, FileNotFoundError, NotADirectoryError) as e:
         logger.error("Tool list_files failed for path=%r: %s", validated.path, e)
         raise
@@ -64,16 +66,18 @@ def read_text_file(path: str) -> str:
         IsADirectoryError: If path is a directory
         UnicodeDecodeError: If file is not valid UTF-8 text
     """
-    logger.debug("Tool invoked: read_text_file path=%r", path)
     try:
         validated = ReadTextFileInput(path=path)
+    except ValidationError as e:
+        msg = format_validation_error(e)
+        logger.error("Tool read_text_file validation failed for path=%r: %s", path, msg)
+        raise ValueError(msg) from e
+
+    logger.debug("Tool invoked: read_text_file path=%r", validated.path)
+    try:
         result = read_file(validated.path)
         logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), validated.path)
         return result
-    except ValidationError as e:
-        msg = format_validation_error(e)
-        logger.error("Tool read_text_file validation failed: %s", msg)
-        raise ValueError(msg) from e
     except (PathValidationError, FileNotFoundError, IsADirectoryError, UnicodeDecodeError) as e:
         logger.error("Tool read_text_file failed for path=%r: %s", validated.path, e)
         raise
