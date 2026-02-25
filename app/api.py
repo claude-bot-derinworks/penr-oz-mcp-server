@@ -64,13 +64,13 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
-    # Strip query parameters from URL before logging to avoid leaking
-    # sensitive values that may appear as query parameters (API keys, tokens).
+    # Strip userinfo (e.g. user:password), query parameters, and fragments
+    # from URL before logging to avoid leaking sensitive values.
     parts = urlsplit(url)
-    safe_netloc = parts.hostname or ''
-    if parts.port:
-        safe_netloc += f':{parts.port}'
-    safe_url = urlunsplit((parts.scheme, safe_netloc, parts.path, '', ''))
+    netloc = parts.netloc
+    if '@' in netloc:
+        netloc = netloc.split('@', 1)[1]
+    safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
     logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
     # Validate inputs with Pydantic
