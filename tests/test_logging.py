@@ -27,12 +27,12 @@ class TestSetupLogging:
         import importlib
         import app.config as cfg
 
-        with patch.dict(os.environ, {}, clear=False):
-            # Reload with DEBUG absent
-            with patch.dict(os.environ, {"DEBUG": ""}, clear=False):
-                importlib.reload(cfg)
-                cfg.setup_logging()
-                assert cfg.LOG_LEVEL == logging.INFO
+        # Ensure DEBUG is not in the environment
+        env = {k: v for k, v in os.environ.items() if k != "DEBUG"}
+        with patch.dict(os.environ, env, clear=True):
+            importlib.reload(cfg)
+            cfg.setup_logging()
+            assert cfg.LOG_LEVEL == logging.INFO
 
     def test_debug_flag_sets_debug_level(self):
         """DEBUG=1 lowers LOG_LEVEL to DEBUG."""
