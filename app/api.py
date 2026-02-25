@@ -69,7 +69,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
     parts = urlsplit(url)
     netloc = parts.netloc
     if '@' in netloc:
-        netloc = netloc.split('@', 1)[1]
+        netloc = netloc.rsplit('@', 1)[-1]
     safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
     logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
