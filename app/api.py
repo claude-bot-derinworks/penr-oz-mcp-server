@@ -64,6 +64,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
+    log_url = "<URL redacted due to error before sanitization>"
     try:
         # Strip userinfo (e.g. user:password), query parameters, and fragments
         # from URL before logging to avoid leaking sensitive values.
@@ -72,6 +73,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         if '@' in netloc:
             netloc = netloc.rsplit('@', 1)[-1]
         safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
+        log_url = safe_url
         logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
         # Validate inputs with Pydantic
@@ -135,6 +137,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        log_url = locals().get("safe_url", "<URL redacted due to error before sanitization>")
+        # log_url is always in scope: set to the redaction placeholder before the
+        # try block, then updated to safe_url once sanitization succeeds.
         logger.error("Tool fetch_json unexpected error for url=%r: %s", log_url, e)
         raise APIError(f"Unexpected error fetching {log_url}: {str(e)}") from e
