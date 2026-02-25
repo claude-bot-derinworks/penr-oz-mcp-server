@@ -1,6 +1,7 @@
 """API integration tools for external HTTP service calls."""
 
 import asyncio
+import json
 import logging
 import httpx
 from typing import Any
@@ -115,7 +116,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
                 result = response.json()
                 logger.info("Tool fetch_json succeeded: url=%r", safe_url)
                 return result
-            except Exception as e:
+            except json.JSONDecodeError as e:
                 logger.error("Tool fetch_json JSON decode error for url=%r", safe_url)
                 raise JSONDecodeError(
                     f"Failed to decode JSON response from {safe_url}. "
