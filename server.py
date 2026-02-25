@@ -1,9 +1,11 @@
 """MCP server entrypoint for penr-oz."""
 
+import logging
+
 from fastmcp import FastMCP
 
 from app.api import fetch_json
-from app.config import SERVER_NAME
+from app.config import SERVER_NAME, setup_logging
 from app.prompts import (
     summarize_text,
     extract_tasks,
@@ -14,6 +16,8 @@ from app.prompts import (
 )
 from app.resources import info, ozfs_resource
 from app.tools import ping, list_files, read_text_file
+
+logger = logging.getLogger(__name__)
 
 
 def create_mcp() -> FastMCP:
@@ -45,7 +49,10 @@ def create_mcp() -> FastMCP:
 
 def main() -> None:
     """Run the MCP server."""
+    setup_logging()
+    logger.info("Starting %s", SERVER_NAME)
     mcp = create_mcp()
+    logger.info("Server configured — tools, resources, and prompts registered")
     mcp.run()
 
 
