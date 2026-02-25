@@ -121,7 +121,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
                 logger.info("Tool fetch_json succeeded: url=%r", safe_url)
                 return result
             except json.JSONDecodeError as e:
-                logger.error("Tool fetch_json JSON decode error for url=%r", safe_url)
+                logger.error("Tool fetch_json JSON decode error for url=%r: %s", safe_url, e)
                 raise JSONDecodeError(
                     f"Failed to decode JSON response from {safe_url}. "
                     f"Response may not be valid JSON."
