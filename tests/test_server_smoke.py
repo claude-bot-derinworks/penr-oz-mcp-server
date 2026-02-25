@@ -17,9 +17,9 @@ def test_server_registers_components() -> None:
     """Server initializes with at least one tool, resource, and prompt."""
     mcp = create_mcp()
 
-    tools = asyncio.run(mcp.get_tools())
-    resources = asyncio.run(mcp.get_resources())
-    prompts = asyncio.run(mcp.get_prompts())
+    tools = asyncio.run(mcp.list_tools())
+    resources = asyncio.run(mcp.list_resources())
+    prompts = asyncio.run(mcp.list_prompts())
 
     assert tools, "Expected at least one registered tool."
     assert resources, "Expected at least one registered resource."

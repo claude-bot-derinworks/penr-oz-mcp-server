@@ -167,7 +167,7 @@ def test_summarize_prompt_backward_compatibility() -> None:
 def test_all_prompts_registered() -> None:
     """Test that all prompts including legacy are registered."""
     mcp = create_mcp()
-    prompts = asyncio.run(mcp.get_prompts())
+    prompts = asyncio.run(mcp.list_prompts())
 
     prompt_names = list(prompts.keys()) if isinstance(prompts, dict) else [p.name for p in prompts]
 

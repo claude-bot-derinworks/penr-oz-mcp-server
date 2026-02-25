@@ -41,10 +41,10 @@ def list_files(path: str = "") -> List[Dict[str, str]]:
         raise ValueError(msg) from e
     try:
         result = list_directory(validated.path)
-        logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), path)
+        logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), validated.path)
         return result
     except (PathValidationError, FileNotFoundError, NotADirectoryError) as e:
-        logger.error("Tool list_files failed: %s", e)
+        logger.error("Tool list_files failed for path=%r: %s", validated.path, e)
         raise
 
 
@@ -74,8 +74,8 @@ def read_text_file(path: str) -> str:
         raise ValueError(msg) from e
     try:
         result = read_file(validated.path)
-        logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), path)
+        logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), validated.path)
         return result
     except (PathValidationError, FileNotFoundError, IsADirectoryError, UnicodeDecodeError) as e:
-        logger.error("Tool read_text_file failed: %s", e)
+        logger.error("Tool read_text_file failed for path=%r: %s", validated.path, e)
         raise
