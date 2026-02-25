@@ -64,34 +64,34 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
-    # Strip userinfo (e.g. user:password), query parameters, and fragments
-    # from URL before logging to avoid leaking sensitive values.
-    parts = urlsplit(url)
-    netloc = parts.netloc
-    if '@' in netloc:
-        netloc = netloc.rsplit('@', 1)[-1]
-    safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
-    logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
-
-    # Validate inputs with Pydantic
     try:
-        validated = FetchJsonInput(url=url, timeout=timeout)
-    except ValidationError as e:
-        msg = format_validation_error(e)
-        logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
-        raise InvalidURLError(msg) from e
+        # Strip userinfo (e.g. user:password), query parameters, and fragments
+        # from URL before logging to avoid leaking sensitive values.
+        parts = urlsplit(url)
+        netloc = parts.netloc
+        if '@' in netloc:
+            netloc = netloc.rsplit('@', 1)[-1]
+        safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
+        logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
-    url = validated.url
-    timeout = validated.timeout
+        # Validate inputs with Pydantic
+        try:
+            validated = FetchJsonInput(url=url, timeout=timeout)
+        except ValidationError as e:
+            msg = format_validation_error(e)
+            logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
+            raise InvalidURLError(msg) from e
 
-    # Validate URL scheme
-    if not url.startswith(("http://", "https://")):
-        logger.error("Tool fetch_json invalid URL scheme: %r", safe_url)
-        raise InvalidURLError(
-            f"Invalid URL scheme. URL must start with http:// or https://. Got: {safe_url}"
-        )
+        url = validated.url
+        timeout = validated.timeout
 
-    try:
+        # Validate URL scheme
+        if not url.startswith(("http://", "https://")):
+            logger.error("Tool fetch_json invalid URL scheme: %r", safe_url)
+            raise InvalidURLError(
+                f"Invalid URL scheme. URL must start with http:// or https://. Got: {safe_url}"
+            )
+
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             try:
                 response = await client.get(url)
