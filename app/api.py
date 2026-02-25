@@ -4,6 +4,7 @@ import asyncio
 import logging
 import httpx
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 from pydantic import ValidationError
 from app.models import FetchJsonInput
 from app.errors import format_validation_error
@@ -64,7 +65,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
     """
     # Strip query parameters from URL before logging to avoid leaking
     # sensitive values that may appear as query parameters (API keys, tokens).
-    safe_url = url.split("?")[0]
+    safe_url = urlunsplit(urlsplit(url)[:3] + ('', ''))
     logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
     # Validate inputs with Pydantic
