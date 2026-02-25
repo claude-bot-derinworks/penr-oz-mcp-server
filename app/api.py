@@ -131,6 +131,6 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        log_url = safe_url if "safe_url" in locals() else url
+        log_url = locals().get("safe_url", url)
         logger.error("Tool fetch_json unexpected error for url=%r: %s", log_url, e)
         raise APIError(f"Unexpected error fetching {log_url}: {str(e)}") from e

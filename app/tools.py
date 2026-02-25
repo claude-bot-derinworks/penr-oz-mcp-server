@@ -35,14 +35,13 @@ def list_files(path: str = "") -> List[Dict[str, str]]:
     logger.debug("Tool invoked: list_files path=%r", path)
     try:
         validated = ListFilesInput(path=path)
+        result = list_directory(validated.path)
+        logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), validated.path)
+        return result
     except ValidationError as e:
         msg = format_validation_error(e)
         logger.error("Tool list_files validation failed: %s", msg)
         raise ValueError(msg) from e
-    try:
-        result = list_directory(validated.path)
-        logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), validated.path)
-        return result
     except (PathValidationError, FileNotFoundError, NotADirectoryError) as e:
         logger.error("Tool list_files failed for path=%r: %s", validated.path, e)
         raise
@@ -68,14 +67,13 @@ def read_text_file(path: str) -> str:
     logger.debug("Tool invoked: read_text_file path=%r", path)
     try:
         validated = ReadTextFileInput(path=path)
+        result = read_file(validated.path)
+        logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), validated.path)
+        return result
     except ValidationError as e:
         msg = format_validation_error(e)
         logger.error("Tool read_text_file validation failed: %s", msg)
         raise ValueError(msg) from e
-    try:
-        result = read_file(validated.path)
-        logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), validated.path)
-        return result
     except (PathValidationError, FileNotFoundError, IsADirectoryError, UnicodeDecodeError) as e:
         logger.error("Tool read_text_file failed for path=%r: %s", validated.path, e)
         raise
