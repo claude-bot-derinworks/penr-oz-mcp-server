@@ -24,7 +24,7 @@ class TestSetupLogging:
         import app.config as cfg
         importlib.reload(cfg)
 
-    def test_default_level_is_info(self, caplog):
+    def test_default_level_is_info(self):
         """setup_logging() sets root log level to INFO when DEBUG is unset."""
         import importlib
         import app.config as cfg
@@ -154,7 +154,7 @@ class TestReadTextFileLogging:
         from app.tools import read_text_file
 
         with caplog.at_level(logging.ERROR, logger="app.tools"):
-            with pytest.raises((FileNotFoundError, Exception)):
+            with pytest.raises(FileNotFoundError):
                 read_text_file("no_such_file.txt")
 
         assert any(record.levelno == logging.ERROR for record in caplog.records)
@@ -164,7 +164,7 @@ class TestReadTextFileLogging:
         from app.tools import read_text_file
 
         with caplog.at_level(logging.DEBUG, logger="app.tools"):
-            with pytest.raises(Exception):
+            with pytest.raises(FileNotFoundError):
                 read_text_file("no_such_file.txt")
 
         assert any(
