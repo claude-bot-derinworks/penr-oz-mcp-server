@@ -64,6 +64,8 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
+    # log_url starts as a redaction placeholder; updated to safe_url once
+    # URL sanitization succeeds so it is always in scope for error handlers.
     log_url = "<URL redacted due to error before sanitization>"
     try:
         # Strip userinfo (e.g. user:password), query parameters, and fragments
@@ -77,13 +79,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
         # Validate inputs with Pydantic
-        try:
-            validated = FetchJsonInput(url=url, timeout=timeout)
-        except ValidationError as e:
-            msg = format_validation_error(e)
-            logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
-            raise InvalidURLError(msg) from e
-
+        validated = FetchJsonInput(url=url, timeout=timeout)
         url = validated.url
         timeout = validated.timeout
 
@@ -95,49 +91,47 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
             )
 
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            try:
-                response = await client.get(url)
-                response.raise_for_status()
-            except httpx.TimeoutException as e:
-                logger.error("Tool fetch_json timed out after %s seconds", timeout)
-                raise TimeoutError(
-                    f"Request timed out after {timeout} seconds for URL: {safe_url}"
-                ) from e
-            except httpx.HTTPStatusError as e:
-                logger.error("Tool fetch_json HTTP error %s for url=%r", e.response.status_code, safe_url)
-                raise HTTPError(
-                    f"HTTP {e.response.status_code} error for URL: {safe_url}"
-                ) from e
-            except httpx.InvalidURL as e:
-                logger.error("Tool fetch_json invalid URL format: %r", safe_url)
-                raise InvalidURLError(f"Invalid URL format: {safe_url}") from e
-            except httpx.RequestError as e:
-                logger.error("Tool fetch_json network error for url=%r: %s", safe_url, e)
-                raise APIError(
-                    f"Network error occurred while fetching {safe_url}: {str(e)}"
-                ) from e
+            response = await client.get(url)
+            response.raise_for_status()
+            result = response.json()
+            logger.info("Tool fetch_json succeeded: url=%r", safe_url)
+            return result
 
-            # Parse JSON response
-            try:
-                result = response.json()
-                logger.info("Tool fetch_json succeeded: url=%r", safe_url)
-                return result
-            except json.JSONDecodeError as e:
-                logger.error("Tool fetch_json JSON decode error for url=%r: %s", safe_url, e)
-                raise JSONDecodeError(
-                    f"Failed to decode JSON response from {safe_url}. "
-                    f"Response may not be valid JSON."
-                ) from e
-
+    except ValidationError as e:
+        msg = format_validation_error(e)
+        logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
+        raise InvalidURLError(msg) from e
+    except httpx.TimeoutException as e:
+        logger.error("Tool fetch_json timed out after %s seconds", timeout)
+        raise TimeoutError(
+            f"Request timed out after {timeout} seconds for URL: {safe_url}"
+        ) from e
+    except httpx.HTTPStatusError as e:
+        logger.error("Tool fetch_json HTTP error %s for url=%r", e.response.status_code, safe_url)
+        raise HTTPError(
+            f"HTTP {e.response.status_code} error for URL: {safe_url}"
+        ) from e
+    except httpx.InvalidURL as e:
+        logger.error("Tool fetch_json invalid URL format: %r", safe_url)
+        raise InvalidURLError(f"Invalid URL format: {safe_url}") from e
+    except httpx.RequestError as e:
+        logger.error("Tool fetch_json network error for url=%r: %s", safe_url, e)
+        raise APIError(
+            f"Network error occurred while fetching {safe_url}: {str(e)}"
+        ) from e
+    except json.JSONDecodeError as e:
+        logger.error("Tool fetch_json JSON decode error for url=%r: %s", safe_url, e)
+        raise JSONDecodeError(
+            f"Failed to decode JSON response from {safe_url}. "
+            f"Response may not be valid JSON."
+        ) from e
     except APIError:
-        # Re-raise our custom exceptions
+        # Re-raise our custom exceptions without wrapping
         raise
     except asyncio.CancelledError:
         # Re-raise cancellation to allow proper task cleanup
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        # log_url is always in scope: set to the redaction placeholder before the
-        # try block, then updated to safe_url once sanitization succeeds.
         logger.error("Tool fetch_json unexpected error for url=%r: %s", log_url, e)
         raise APIError(f"Unexpected error fetching {log_url}: {str(e)}") from e
