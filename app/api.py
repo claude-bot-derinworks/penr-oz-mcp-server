@@ -12,6 +12,17 @@ from app.errors import format_validation_error
 
 logger = logging.getLogger(__name__)
 
+_REDACTED_URL = "<URL redacted due to error before sanitization>"
+
+
+def _sanitize_url(url: str) -> str:
+    """Return url with userinfo, query parameters, and fragment stripped."""
+    parts = urlsplit(url)
+    netloc = parts.netloc
+    if '@' in netloc:
+        netloc = netloc.rsplit('@', 1)[-1]
+    return urlunsplit((parts.scheme, netloc, parts.path, '', ''))
+
 
 class APIError(Exception):
     """Base exception for API-related errors."""
@@ -64,9 +75,9 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
-    # Initialise safe_url to a redaction placeholder so it is always in scope
-    # for all except handlers, even if URL sanitization fails before assignment.
-    safe_url = "<URL redacted due to error before sanitization>"
+    # Initialise safe_url to the redaction placeholder so it is always in scope
+    # for all except handlers, even if sanitization fails before assignment.
+    safe_url = _REDACTED_URL
     try:
         # Log invocation first so a DEBUG record is always emitted, even when
         # validation fails before safe_url can be computed.
@@ -78,13 +89,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         url = validated.url
         timeout = validated.timeout
 
-        # Strip userinfo (e.g. user:password), query parameters, and fragments
-        # from URL before logging to avoid leaking sensitive values.
-        parts = urlsplit(url)
-        netloc = parts.netloc
-        if '@' in netloc:
-            netloc = netloc.rsplit('@', 1)[-1]
-        safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
+        safe_url = _sanitize_url(url)
         logger.debug("Tool fetch_json url=%r", safe_url)
 
         # Validate URL scheme
@@ -104,17 +109,13 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
     except ValidationError as e:
         msg = format_validation_error(e)
         # Try to sanitize the original url for the log; fall back to the placeholder
-        # if url is not a string or urlsplit raises (e.g. invalid IPv6 literal).
+        # if url is not a string or urlsplit raises a ValueError (e.g. invalid IPv6).
         log_url = safe_url
         if isinstance(url, str):
             try:
-                parts = urlsplit(url)
-                netloc = parts.netloc
-                if '@' in netloc:
-                    netloc = netloc.rsplit('@', 1)[-1]
-                log_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
-            except Exception:
-                pass  # keep placeholder
+                log_url = _sanitize_url(url)
+            except ValueError:
+                pass  # keep placeholder for unparseable URL
         logger.error("Tool fetch_json validation failed for input (url=%r, timeout=%s): %s", log_url, timeout, msg)
         raise InvalidURLError(msg) from e
     except httpx.TimeoutException as e:
