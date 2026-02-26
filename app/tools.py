@@ -45,7 +45,7 @@ def list_files(path: str = "") -> List[Dict[str, str]]:
         logger.info("Tool list_files succeeded: %d entries for path=%r", len(result), validated.path)
         return result
     except (PathValidationError, FileNotFoundError, NotADirectoryError) as e:
-        logger.error("Tool list_files failed for path=%r: %s", validated.path, e)
+        logger.error("Tool list_files failed for path=%r", validated.path, exc_info=True)
         raise
 
 
@@ -79,5 +79,5 @@ def read_text_file(path: str) -> str:
         logger.info("Tool read_text_file succeeded: %d bytes for path=%r", len(result), validated.path)
         return result
     except (PathValidationError, FileNotFoundError, IsADirectoryError, UnicodeDecodeError) as e:
-        logger.error("Tool read_text_file failed for path=%r: %s", validated.path, e)
+        logger.error("Tool read_text_file failed for path=%r", validated.path, exc_info=True)
         raise

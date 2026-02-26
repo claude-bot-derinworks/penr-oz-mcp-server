@@ -137,7 +137,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
             f"Network error occurred while fetching {safe_url}"
         ) from e
     except json.JSONDecodeError as e:
-        logger.error("Tool fetch_json JSON decode error for url=%r: %s", safe_url, e)
+        logger.error("Tool fetch_json JSON decode error for url=%r", safe_url, exc_info=True)
         raise JSONDecodeError(
             f"Failed to decode JSON response from {safe_url}. "
             f"Response may not be valid JSON."
