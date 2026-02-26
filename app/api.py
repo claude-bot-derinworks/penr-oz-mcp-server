@@ -132,9 +132,9 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         logger.error("Tool fetch_json invalid URL format: %r", safe_url)
         raise InvalidURLError(f"Invalid URL format: {safe_url}") from e
     except httpx.RequestError as e:
-        logger.error("Tool fetch_json network error for url=%r: %s", safe_url, e)
+        logger.error("Tool fetch_json network error for url=%r", safe_url, exc_info=True)
         raise APIError(
-            f"Network error occurred while fetching {safe_url}: {str(e)}"
+            f"Network error occurred while fetching {safe_url}"
         ) from e
     except json.JSONDecodeError as e:
         logger.error("Tool fetch_json JSON decode error for url=%r: %s", safe_url, e)
@@ -150,5 +150,5 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        logger.error("Tool fetch_json unexpected error for url=%r: %s", safe_url, e)
-        raise APIError(f"Unexpected error fetching {safe_url}: {str(e)}") from e
+        logger.error("Tool fetch_json unexpected error for url=%r", safe_url, exc_info=True)
+        raise APIError(f"Unexpected error fetching {safe_url}") from e
