@@ -64,9 +64,9 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         >>> await fetch_json("https://api.github.com/repos/python/cpython")
         {"name": "cpython", "full_name": "python/cpython", ...}
     """
-    # log_url starts as a redaction placeholder; updated to safe_url once
-    # URL sanitization succeeds so it is always in scope for error handlers.
-    log_url = "<URL redacted due to error before sanitization>"
+    # Initialise safe_url to a redaction placeholder so it is always in scope
+    # for all except handlers, even if URL sanitization fails before assignment.
+    safe_url = "<URL redacted due to error before sanitization>"
     try:
         # Strip userinfo (e.g. user:password), query parameters, and fragments
         # from URL before logging to avoid leaking sensitive values.
@@ -75,7 +75,6 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         if '@' in netloc:
             netloc = netloc.rsplit('@', 1)[-1]
         safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
-        log_url = safe_url
         logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
 
         # Validate inputs with Pydantic
@@ -102,7 +101,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         logger.error("Tool fetch_json validation failed for input (url=%r, timeout=%s): %s", safe_url, timeout, msg)
         raise InvalidURLError(msg) from e
     except httpx.TimeoutException as e:
-        logger.error("Tool fetch_json timed out after %s seconds", timeout)
+        logger.error("Tool fetch_json timed out for url=%r after %s seconds", safe_url, timeout)
         raise TimeoutError(
             f"Request timed out after {timeout} seconds for URL: {safe_url}"
         ) from e
@@ -133,5 +132,5 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         raise
     except Exception as e:
         # Catch any other unexpected errors
-        logger.error("Tool fetch_json unexpected error for url=%r: %s", log_url, e)
-        raise APIError(f"Unexpected error fetching {log_url}: {str(e)}") from e
+        logger.error("Tool fetch_json unexpected error for url=%r: %s", safe_url, e)
+        raise APIError(f"Unexpected error fetching {safe_url}: {str(e)}") from e
