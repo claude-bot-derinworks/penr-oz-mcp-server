@@ -99,7 +99,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
 
     except ValidationError as e:
         msg = format_validation_error(e)
-        logger.error("Tool fetch_json validation failed for url=%r: %s", safe_url, msg)
+        logger.error("Tool fetch_json validation failed for input (url=%r, timeout=%s): %s", safe_url, timeout, msg)
         raise InvalidURLError(msg) from e
     except httpx.TimeoutException as e:
         logger.error("Tool fetch_json timed out after %s seconds", timeout)

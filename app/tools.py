@@ -36,7 +36,7 @@ def list_files(path: str = "") -> List[Dict[str, str]]:
         validated = ListFilesInput(path=path)
     except ValidationError as e:
         msg = format_validation_error(e)
-        logger.error("Tool list_files validation failed for path=%r: %s", path, msg)
+        logger.error("Tool list_files validation failed: %s", msg)
         raise ValueError(msg) from e
 
     logger.debug("Tool invoked: list_files path=%r", validated.path)
@@ -70,7 +70,7 @@ def read_text_file(path: str) -> str:
         validated = ReadTextFileInput(path=path)
     except ValidationError as e:
         msg = format_validation_error(e)
-        logger.error("Tool read_text_file validation failed for path=%r: %s", path, msg)
+        logger.error("Tool read_text_file validation failed: %s", msg)
         raise ValueError(msg) from e
 
     logger.debug("Tool invoked: read_text_file path=%r", validated.path)
