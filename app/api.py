@@ -68,6 +68,16 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
     # for all except handlers, even if URL sanitization fails before assignment.
     safe_url = "<URL redacted due to error before sanitization>"
     try:
+        # Log invocation first so a DEBUG record is always emitted, even when
+        # validation fails before safe_url can be computed.
+        logger.debug("Tool invoked: fetch_json timeout=%s", timeout)
+
+        # Validate inputs with Pydantic before using them, so type errors
+        # (e.g. url=None) raise InvalidURLError rather than a generic APIError.
+        validated = FetchJsonInput(url=url, timeout=timeout)
+        url = validated.url
+        timeout = validated.timeout
+
         # Strip userinfo (e.g. user:password), query parameters, and fragments
         # from URL before logging to avoid leaking sensitive values.
         parts = urlsplit(url)
@@ -75,12 +85,7 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
         if '@' in netloc:
             netloc = netloc.rsplit('@', 1)[-1]
         safe_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
-        logger.debug("Tool invoked: fetch_json url=%r timeout=%s", safe_url, timeout)
-
-        # Validate inputs with Pydantic
-        validated = FetchJsonInput(url=url, timeout=timeout)
-        url = validated.url
-        timeout = validated.timeout
+        logger.debug("Tool fetch_json url=%r", safe_url)
 
         # Validate URL scheme
         if not url.startswith(("http://", "https://")):
