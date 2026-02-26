@@ -103,7 +103,19 @@ async def fetch_json(url: str, timeout: float = 10.0) -> dict[str, Any]:
 
     except ValidationError as e:
         msg = format_validation_error(e)
-        logger.error("Tool fetch_json validation failed for input (url=%r, timeout=%s): %s", safe_url, timeout, msg)
+        # Try to sanitize the original url for the log; fall back to the placeholder
+        # if url is not a string or urlsplit raises (e.g. invalid IPv6 literal).
+        log_url = safe_url
+        if isinstance(url, str):
+            try:
+                parts = urlsplit(url)
+                netloc = parts.netloc
+                if '@' in netloc:
+                    netloc = netloc.rsplit('@', 1)[-1]
+                log_url = urlunsplit((parts.scheme, netloc, parts.path, '', ''))
+            except Exception:
+                pass  # keep placeholder
+        logger.error("Tool fetch_json validation failed for input (url=%r, timeout=%s): %s", log_url, timeout, msg)
         raise InvalidURLError(msg) from e
     except httpx.TimeoutException as e:
         logger.error("Tool fetch_json timed out for url=%r after %s seconds", safe_url, timeout)
